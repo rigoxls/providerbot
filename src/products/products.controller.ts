@@ -26,11 +26,6 @@ export class ProductsController {
         }
     }
 
-    @Get('/byCatalog:catalogId')
-    getProductsByCategory(@Param('catalogId', ParseIntPipe) catalogId: number): Promise<Array<ProductDto>> {
-        return this.productsService.getProductsByCatalog(catalogId);
-    }
-
     @MessagePattern('rabbit-mq-producer')
     public async execute(
         @Payload() data: any        
