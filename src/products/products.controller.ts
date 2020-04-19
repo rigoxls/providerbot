@@ -32,7 +32,7 @@ export class ProductsController {
     ) {
         try {                        
             const offer = data;
-            this.productsService.getOfferProducts(offer.products);                        
+            this.productsService.getOfferProducts(offer);
         } catch (error) {
             this.logger.error(error.message);
             

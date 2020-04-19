@@ -15,7 +15,6 @@ export class ProductsService {
   }
 
   async getProducts(): Promise<Array<ProductDto>> {
-    // return this.buildProducts(this.productsQuantity, 1); // Auto-generated products
     return this.getMockProducts(); // Products from static mocks
   }
 
@@ -24,24 +23,36 @@ export class ProductsService {
    * @param reqProducts
    */
   async getOfferProducts(reqProducts: Array<any>): Promise<any> {
-    this.logger.log(`Getting ${reqProducts.length} offer Products`);
-    let offerProducts = [];
-    const products = await this.getProducts();
-    for (const reqProd of reqProducts) {
-      let product = products.find((e) => {
-        return e.id === reqProd;
-      });
-
+    this.logger.log(`Cotización resibida`);
+    this.logger.log(`${JSON.stringify(reqProducts)}`);
+    const offerProducts = [];
+    for (const product of reqProducts['products']) {
       if (product) {
-        let offerProduct = { productId: reqProd, price: product.price, offerPrice: null, discount: 0 };
-        let discount = Math.floor(Math.random() * this.maxDiscount) + 1;
-        offerProduct.offerPrice = (product.price * (100 - discount)) / 100;
-        offerProduct.discount = discount;
-        offerProducts.push(offerProduct);
+        const discount = Math.floor(Math.random() * this.maxDiscount) + 1;
+        product.priceOffer = (product.price * (100 - discount)) / 100;
+        delete product.price;
+        offerProducts.push(product);
       }
     }
-    // TODO: Enviar petición al API del backend que recibe el resultado de las ofertas
-    return offerProducts;
+
+    const payload = {
+      userId: 2,
+      requestId: reqProducts['requestId'],
+      status: "PENDING",
+      products: offerProducts
+    }
+
+    this.logger.log(`Cotización expuesta`);
+    this.logger.log(`${JSON.stringify(payload)}`);
+
+    await this.http.post<any>(`http://localhost:3001/offer`, payload).subscribe(data => {
+        this.logger.log('Se ha enviado la oferta al cliente emisor');
+      },
+      error => {
+        this.logger.log(JSON.stringify(error));
+      });
+
+    return payload;
   }
 
   /**
@@ -51,7 +62,6 @@ export class ProductsService {
     const products: Array<ProductDto> = [];
     const mockProducts = await this.http.get<any>(`http://demo9871246.mockable.io/provider1`).toPromise();
 
-    // @ts-ignore
     for (const mockProduct of mockProducts.data) {
       const product = new ProductDto();
       product.id = mockProduct.id;
@@ -62,30 +72,6 @@ export class ProductsService {
       product.imageUrl = mockProduct.imageUrl;
       product.createDate = mockProduct.createDate;
       products.push(product);
-    }
-    return products;
-  }
-
-
-  /**
-   * Builds dynamically a list of products
-   * @param quantity
-   * @param categoryId
-   */
-  private buildProducts(quantity: number, catalogId: number): Array<ProductDto> {
-    let products: Array<ProductDto> = [];
-    let i = 1;
-    while (i < quantity) {
-      let product = new ProductDto();
-      product.id = i;
-      product.catalogId = catalogId;
-      product.price = 50000;
-      product.name = `Product ${product.id}`;
-      product.description = `${product.name} description`;
-      product.imageUrl = `https://www.psdmockups.com/wp-content/uploads/2017/08/Square-Corrugated-Cardboard-Shipping-Box-PSD-Mockup-520x392.jpg`;
-      product.createDate = Date.now();
-      products.push(product);
-      i++;
     }
     return products;
   }
